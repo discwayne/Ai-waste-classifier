@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#102b22" />
+  <meta name="description" content="An educational AI waste classification project by Kalaigamal. M." />
+  <title>AI Waste Classifier | Kalaigamal. M</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #152820;
+      --muted: #64756d;
+      --green: #176b4a;
+      --green-dark: #0d4932;
+      --green-soft: #eaf4ee;
+      --line: #dce8e0;
+      --surface: #ffffff;
+      --bg: #f2f6f3;
+      --danger: #a63838;
+      --shadow: 0 18px 55px rgba(22, 55, 39, .09);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(96, 160, 119, .15), transparent 28rem),
+        radial-gradient(circle at 95% 16%, rgba(190, 213, 196, .35), transparent 24rem),
+        var(--bg);
+      min-height: 100vh;
+    }
+    .page { width: min(920px, calc(100% - 32px)); margin: 34px auto; }
+    .topline { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 0 4px 14px; }
+    .brand { color: var(--green-dark); font-size: .82rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .author { color: var(--muted); font-size: .9rem; font-weight: 650; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: clamp(22px, 4vw, 42px); box-shadow: var(--shadow); }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--green); background: var(--green-soft); border: 1px solid #d4e9db; border-radius: 999px; padding: 7px 12px; font-size: .76rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #39a36d; box-shadow: 0 0 0 4px rgba(57,163,109,.12); }
+    h1 { margin: 16px 0 8px; font-size: clamp(2rem, 5vw, 3.35rem); line-height: 1.04; letter-spacing: -.045em; }
+    .subtitle { max-width: 720px; margin: 0; color: var(--muted); font-size: 1.04rem; line-height: 1.7; }
+    .notice { display: flex; gap: 12px; margin: 24px 0; padding: 15px 17px; border: 1px solid #d6e8dc; border-left: 4px solid #548d6b; border-radius: 13px; background: #f1f7f3; color: #40594a; font-size: .91rem; line-height: 1.55; }
+    .notice-icon { flex: 0 0 auto; font-size: 1.1rem; }
+    .model-state { display: flex; gap: 11px; align-items: flex-start; margin: 18px 0 24px; padding: 14px 16px; border-radius: 12px; background: #f5f8f6; border: 1px solid var(--line); color: #42554b; line-height: 1.5; font-size: .9rem; }
+    .model-state.loading { background: #f5f8fc; border-color: #d8e2f0; }
+    .model-state.ok { background: #edf7f0; border-color: #cce5d3; color: #24583b; }
+    .model-state.error { background: #fff2f0; border-color: #f1cfca; color: #923333; }
+    .state-icon { font-size: 1.05rem; font-weight: 900; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 26px 0 12px; }
+    h2 { margin: 0; font-size: 1.12rem; letter-spacing: -.01em; }
+    .hint { color: var(--muted); font-size: .83rem; }
+    .mode-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 5px; border-radius: 13px; background: #f0f5f1; border: 1px solid var(--line); }
+    .tab { margin: 0; padding: 11px 12px; border: 0; border-radius: 9px; color: #52655a; background: transparent; font-weight: 750; cursor: pointer; }
+    .tab.active { color: #164b34; background: white; box-shadow: 0 2px 8px rgba(23, 64, 42, .08); }
+    .mode-panel { margin-top: 14px; }
+    .upload-box { padding: 18px; border: 1px dashed #a9c1b1; border-radius: 15px; background: #fbfdfb; }
+    input[type="file"] { display: block; width: 100%; color: var(--muted); font-size: .92rem; }
+    input[type="file"]::file-selector-button { margin-right: 12px; padding: 10px 13px; border: 1px solid #cbdcd0; border-radius: 9px; background: #edf5ef; color: #20553a; font-weight: 750; cursor: pointer; }
+    .camera-shell { overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: #101a15; }
+    .camera-stage { position: relative; display: grid; place-items: center; min-height: 210px; aspect-ratio: 16 / 10; background: #101a15; }
+    video { display: none; width: 100%; height: 100%; max-height: 480px; aspect-ratio: 16 / 10; object-fit: cover; }
+    .camera-placeholder { max-width: 300px; padding: 28px; text-align: center; color: #d7e4da; line-height: 1.5; }
+    .camera-placeholder .camera-symbol { display: block; margin-bottom: 8px; font-size: 2.2rem; }
+    .camera-controls { display: flex; flex-wrap: wrap; gap: 9px; padding: 12px; background: #f6f9f7; }
+    button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 1px solid transparent; border-radius: 10px; background: var(--green); color: white; font: inherit; font-size: .92rem; font-weight: 760; cursor: pointer; transition: transform .12s ease, background .12s ease, box-shadow .12s ease; }
+    button:hover:not(:disabled) { background: var(--green-dark); box-shadow: 0 5px 13px rgba(16, 78, 49, .15); transform: translateY(-1px); }
+    button:disabled { opacity: .43; cursor: not-allowed; }
+    button.secondary { background: white; color: #28563d; border-color: #cfe0d4; }
+    button.secondary:hover:not(:disabled) { background: #eef6f0; }
+    button.ghost { background: transparent; color: #53675b; border-color: var(--line); }
+    .action-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    #preview { display: none; max-width: 100%; max-height: 390px; margin: 18px auto 0; object-fit: contain; border-radius: 14px; background: #f2f5f3; }
+    .preview-wrap { text-align: center; }
+    .preview-label { display: none; margin: 12px 0 0; color: var(--muted); font-size: .82rem; }
+    #status { min-height: 24px; margin: 16px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; overflow-wrap: anywhere; }
+    #status.error { color: var(--danger); }
+    #result { margin-top: 18px; }
+    .verdict { padding: 17px; border: 1px solid #cfe4d5; border-radius: 13px; background: #eef7f0; color: #204c34; line-height: 1.55; }
+    .verdict.low { border-color: #f0dfbd; background: #fff8e9; color: #76541b; }
+    .verdict-title { display: block; margin-bottom: 4px; font-size: 1.35rem; font-weight: 850; }
+    .score-title { margin: 21px 0 12px; font-size: .95rem; font-weight: 800; }
+    .score-row { display: grid; grid-template-columns: 105px minmax(70px, 1fr) 48px; gap: 11px; align-items: center; margin: 12px 0; font-size: .9rem; }
+    .track { height: 10px; overflow: hidden; border-radius: 99px; background: #e8eee9; }
+    .fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #4b9568, #1b6d49); }
+    .foot { margin: 28px 0 0; padding-top: 18px; border-top: 1px solid #edf1ee; color: #77867d; font-size: .81rem; line-height: 1.6; }
+    .footerline { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 14px 5px 0; color: #7a8980; font-size: .8rem; }
+    [hidden] { display: none !important; }
+    @media (max-width: 580px) {
+      .page { width: min(100% - 20px, 920px); margin: 14px auto; }
+      .topline { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .card { border-radius: 18px; padding: 21px 17px; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 5px; }
+      .camera-controls button, .action-row button { flex: 1 1 140px; }
+      .score-row { grid-template-columns: 82px minmax(50px, 1fr) 42px; gap: 8px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+  <main class="page">
+    <div class="topline">
+      <div class="brand">AI for All · Mini Project</div>
+      <div class="author">Developed by <strong>Kalaigamal. M</strong></div>
+    </div>
+
+    <section class="card">
+      <div class="eyebrow"><span class="dot"></span> Image recognition · 4 categories</div>
+      <h1>AI Waste Classifier</h1>
+      <p class="subtitle">Identify common waste materials using an image classification model. Upload a photograph or use your device camera to classify paper, plastic, metal, and organic waste.</p>
+
+      <div class="notice">
+        <span class="notice-icon">♻</span>
+        <div><strong>Educational prototype:</strong> This project provides an AI-based estimate, not official disposal guidance. Do not use it to identify or handle hazardous, biomedical, chemical, battery, or electronic waste.</div>
+      </div>
+
+      <div id="modelStatus" class="model-state loading" role="status" aria-live="polite">
+        <span class="state-icon">…</span><span id="modelStatusText">Loading AI libraries and connecting to the hosted model…</span>
+      </div>
+
+      <div class="section-head">
+        <h2>Choose how to provide an image</h2>
+        <span class="hint">One item per photo works best</span>
+      </div>
+      <div class="mode-tabs" role="tablist" aria-label="Image source">
+        <button class="tab active" id="uploadTab" type="button" role="tab" aria-selected="true">▧ Upload photo</button>
+        <button class="tab" id="cameraTab" type="button" role="tab" aria-selected="false">◎ Use camera</button>
+      </div>
+
+      <section id="uploadPanel" class="mode-panel" role="tabpanel" aria-labelledby="uploadTab">
+        <div class="upload-box">
+          <input id="imageInput" type="file" accept="image/*" aria-label="Choose an existing waste image" />
+          <p class="hint" style="margin:10px 0 0">Choose an existing photo from your gallery or files. To take a new photo, use the separate Use camera tab.</p>
+        </div>
+      </section>
+
+      <section id="cameraPanel" class="mode-panel" role="tabpanel" aria-labelledby="cameraTab" hidden>
+        <p id="cameraPermissionStatus" class="hint" role="status" aria-live="polite">Chrome camera permission will be requested when you tap Start camera.</p>
+        <div class="camera-shell">
+          <div class="camera-stage">
+            <div id="cameraPlaceholder" class="camera-placeholder"><span class="camera-symbol">◎</span><strong>Camera is off</strong><br />Select Start camera to begin. Allow camera permission when your browser asks.</div>
+            <video id="cameraVideo" autoplay muted playsinline></video>
+          </div>
+          <div class="camera-controls">
+            <button id="startCameraButton" type="button">▶ Allow camera &amp; start</button>
+            <button id="captureButton" type="button" class="secondary" disabled>● Capture photo</button>
+            <button id="switchCameraButton" type="button" class="secondary" disabled>⇄ Switch camera</button>
+            <button id="stopCameraButton" type="button" class="ghost" disabled>Stop</button>
+          </div>
+        </div>
+        <div class="notice" style="margin:12px 0 0">
+          <span class="notice-icon">ⓘ</span>
+          <div><strong>Chrome permission:</strong> Tap <strong>Allow camera &amp; start</strong>. If Chrome has not saved a decision, it should show its camera permission prompt. Choose <strong>Allow</strong>. If no prompt appears and permission is marked Blocked, open the site controls icon beside the address bar → Site settings → Camera → Allow (or Reset permissions), then reload this HTTPS page and try again. Also check Android/Windows camera privacy settings if prompted.</div>
+        </div>
+      </section>
+
+      <div class="preview-wrap">
+        <img id="preview" alt="Selected waste item preview" />
+        <p id="previewLabel" class="preview-label">Image ready for classification</p>
+      </div>
+
+      <div class="action-row">
+        <button id="classifyButton" type="button" disabled>✦ Classify image</button>
+        <button id="clearButton" type="button" class="secondary" disabled>Clear image</button>
+        <button id="retryButton" type="button" class="ghost">Retry model loading</button>
+      </div>
+
+      <p id="status" role="status" aria-live="polite">The AI model is loading. You can choose an image while it loads.</p>
+      <div id="result" aria-live="polite"></div>
+
+      <p class="foot">Privacy: image classification runs in your browser after the model loads. This webpage does not send your selected or captured photographs to a project database or upload server. The model itself is downloaded from Teachable Machine.</p>
+    </section>
+
+    <div class="footerline"><span>AI Waste Classification System</span><span>Project by Kalaigamal. M</span></div>
+  </main>
+  <canvas id="captureCanvas" hidden></canvas>
+
+  <script>
+    // Exact model URL supplied by the project owner.
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/YqWFZhLh8/";
+    const REVIEW_THRESHOLD = 0.60;
+
+    let model = null;
+    let cameraStream = null;
+    let facingMode = "environment";
+    let currentImageUrl = null;
+
+    const $ = (id) => document.getElementById(id);
+    const imageInput = $("imageInput");
+    const preview = $("preview");
+    const previewLabel = $("previewLabel");
+    const classifyButton = $("classifyButton");
+    const clearButton = $("clearButton");
+    const statusBox = $("status");
+    const modelStatus = $("modelStatus");
+    const modelStatusText = $("modelStatusText");
+    const resultBox = $("result");
+    const video = $("cameraVideo");
+    const cameraPlaceholder = $("cameraPlaceholder");
+    const captureCanvas = $("captureCanvas");
+
+    function setModelState(kind, message, icon) {
+      modelStatus.className = "model-state " + kind;
+      modelStatus.querySelector(".state-icon").textContent = icon;
+      modelStatusText.textContent = message;
+    }
+
+    function explainModelError(error) {
+      const message = error && error.message ? error.message : String(error || "Unknown error");
+      if (/404|not found/i.test(message)) {
+        return "The model URL returned a not-found response. Check that the shareable link in Teachable Machine matches the URL configured in this page. Details: " + message;
+      }
+      if (/failed to fetch|networkerror|load failed|fetch failed|network request/i.test(message)) {
+        return "The browser could not download the model. Check internet access, VPN/ad-blocker settings, or whether your network blocks the model/CDN hosts. Details: " + message;
+      }
+      if (/tmImage|undefined|tensorflow|tf\.js/i.test(message)) {
+        return "An AI library did not load. Refresh the page and check whether your network can access jsDelivr. Details: " + message;
+      }
+      return "Could not load the AI model. " + message;
+    }
+
+    async function loadModel() {
+      model = null;
+      classifyButton.disabled = true;
+      setModelState("loading", "Loading AI libraries and connecting to the hosted model…", "…");
+      statusBox.classList.remove("error");
+      statusBox.textContent = "Connecting to your Teachable Machine model…";
+
+      try {
+        if (!window.tf) throw new Error("TensorFlow.js (window.tf) is unavailable; its CDN script may be blocked.");
+        if (!window.tmImage || typeof window.tmImage.load !== "function") throw new Error("The Teachable Machine image library (window.tmImage) is unavailable; its CDN script may be blocked.");
+        await window.tf.ready();
+        model = await window.tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+        const labels = typeof model.getClassLabels === "function" ? model.getClassLabels() : [];
+        const labelText = labels && labels.length ? " Classes detected: " + labels.join(", ") + "." : "";
+        setModelState("ok", "AI model loaded successfully." + labelText, "✓");
+        statusBox.textContent = preview.src ? "Image ready. Select Classify image." : "Choose an image or open the camera to begin.";
+        updateActionButtons();
+      } catch (error) {
+        console.error("Model loading error:", error);
+        const detail = explainModelError(error);
+        setModelState("error", detail, "!");
+        statusBox.classList.add("error");
+        statusBox.textContent = detail;
+      }
+    }
+
+    function updateActionButtons() {
+      classifyButton.disabled = !(model && preview.src);
+      clearButton.disabled = !preview.src;
+    }
+
+    function showImage(src, label) {
+      if (currentImageUrl && currentImageUrl.startsWith("blob:")) URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = src.startsWith("blob:") ? src : null;
+      preview.onload = () => {
+        preview.style.display = "block";
+        previewLabel.style.display = "block";
+        previewLabel.textContent = label || "Image ready for classification";
+        updateActionButtons();
+        statusBox.classList.remove("error");
+        statusBox.textContent = model ? "Image ready. Select Classify image." : "Image selected. Waiting for the AI model to load…";
+      };
+      preview.onerror = () => {
+        statusBox.classList.add("error");
+        statusBox.textContent = "The image could not be opened. Please choose or capture another image.";
+        preview.style.display = "none";
+        updateActionButtons();
+      };
+      preview.src = src;
+    }
+
+    function clearImage() {
+      if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
+      currentImageUrl = null;
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      previewLabel.style.display = "none";
+      imageInput.value = "";
+      resultBox.innerHTML = "";
+      statusBox.classList.remove("error");
+      statusBox.textContent = model ? "Choose an image or open the camera to begin." : "Waiting for the AI model to load…";
+      updateActionButtons();
+    }
+
+    imageInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      resultBox.innerHTML = "";
+      if (!file) return;
+      if (!file.type || !file.type.startsWith("image/")) {
+        statusBox.classList.add("error");
+        statusBox.textContent = "Please choose a valid image file.";
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      showImage(url, "Uploaded photo ready for classification");
+    });
+
+    function stopCamera() {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+        cameraStream = null;
+      }
+      video.pause();
+      video.srcObject = null;
+      video.style.display = "none";
+      cameraPlaceholder.hidden = false;
+      $("captureButton").disabled = true;
+      $("switchCameraButton").disabled = true;
+      $("stopCameraButton").disabled = true;
+      $("startCameraButton").disabled = false;
+    }
+
+    function cameraErrorMessage(error) {
+      const name = error && error.name ? error.name : "UnknownError";
+      const detail = error && error.message ? " Details: " + error.message : "";
+      if (!window.isSecureContext) {
+        return "Camera access is blocked because this page is not in a secure context. Open the HTTPS GitHub Pages website (not an HTTP link or an embedded preview), then try again." + detail;
+      }
+      if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError") {
+        return "Chrome did not grant camera access. If no permission prompt appeared, this site may already be Blocked: open the site controls icon beside the address bar → Site settings → Camera → Allow (or Reset permissions). Then reload this HTTPS page and tap Allow camera & start again. Also check your device's camera privacy permission for Chrome." + detail;
+      }
+      if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        return "No camera was found. Check that your device has a working camera, or use Upload photo." + detail;
+      }
+      if (name === "NotReadableError" || name === "TrackStartError") {
+        return "The camera is already in use or unavailable to the browser. Close the Camera app and any other app or browser tab using the camera, then try again." + detail;
+      }
+      if (name === "OverconstrainedError" || name === "ConstraintNotSatisfiedError") {
+        return "The requested camera is unavailable. Try Switch camera, or use Upload photo." + detail;
+      }
+      if (name === "AbortError") {
+        return "The browser could not start the camera. Close other camera apps and retry." + detail;
+      }
+      return "Could not start the camera (" + name + "). Check site and device camera permissions, then retry." + detail;
+    }
+
+    async function readCameraPermissionState() {
+      // The Permissions API is a status check only; getUserMedia() below is what
+      // actually triggers Chrome's native permission prompt.
+      if (!navigator.permissions || typeof navigator.permissions.query !== "function") {
+        return "unsupported";
+      }
+      try {
+        const permission = await navigator.permissions.query({ name: "camera" });
+        return permission.state; // "granted", "prompt", or "denied"
+      } catch (_) {
+        return "unsupported";
+      }
+    }
+
+    async function refreshCameraPermissionStatus() {
+      const status = $("cameraPermissionStatus");
+      if (!status) return;
+      const state = await readCameraPermissionState();
+
+      if (state === "granted") {
+        status.textContent = "Chrome camera permission: Allowed. Tap Allow camera & start to open the rear camera.";
+      } else if (state === "denied") {
+        status.textContent = "Chrome camera permission: Blocked. Chrome will not show another prompt until you change this site's Camera permission to Allow or Reset permissions in Site settings.";
+      } else if (state === "prompt") {
+        status.textContent = "Chrome camera permission: Not decided. Tap Allow camera & start and choose Allow in Chrome's prompt.";
+      } else {
+        status.textContent = "Tap Allow camera & start. Chrome will request permission if this site has not already been blocked.";
+      }
+    }
+
+    async function startCamera() {
+      if (!window.isSecureContext) {
+        statusBox.classList.add("error");
+        statusBox.textContent = cameraErrorMessage({ name: "InsecureContextError" });
+        return;
+      }
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
+        statusBox.classList.add("error");
+        statusBox.textContent = "This browser does not provide camera access on this page. Open the HTTPS GitHub Pages website in Chrome or Safari, or use Upload photo.";
+        return;
+      }
+
+      stopCamera();
+      const startButton = $("startCameraButton");
+      startButton.disabled = true;
+      statusBox.classList.remove("error");
+      statusBox.textContent = "Requesting camera permission. Choose Allow if your browser asks…";
+
+      try {
+        // Keep this request directly inside the Start button's click flow so browsers can show permission UI.
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
+        // This is the actual permission request. It is invoked directly from the
+        // Start button's click handler so Chrome can display its native prompt.
+        const permissionRequest = navigator.mediaDevices.getUserMedia(constraints);
+        cameraStream = await permissionRequest;
+        video.srcObject = cameraStream;
+        video.style.display = "block";
+        cameraPlaceholder.hidden = true;
+        await video.play();
+
+        $("captureButton").disabled = false;
+        $("switchCameraButton").disabled = false;
+        $("stopCameraButton").disabled = false;
+        startButton.disabled = true;
+        const track = cameraStream.getVideoTracks()[0];
+        const trackLabel = track && track.label ? " Using: " + track.label + "." : "";
+        statusBox.textContent = (facingMode === "environment" ? "Camera started. Rear camera requested." : "Camera started. Front camera requested.") + " Frame one waste item and capture a photo." + trackLabel;
+        refreshCameraPermissionStatus();
+      } catch (error) {
+        console.error("Camera start error:", error);
+        if (cameraStream) {
+          cameraStream.getTracks().forEach((track) => track.stop());
+          cameraStream = null;
+        }
+        video.srcObject = null;
+        video.style.display = "none";
+        cameraPlaceholder.hidden = false;
+        startButton.disabled = false;
+        $("captureButton").disabled = true;
+        $("switchCameraButton").disabled = true;
+        $("stopCameraButton").disabled = true;
+        statusBox.classList.add("error");
+        statusBox.textContent = cameraErrorMessage(error);
+        refreshCameraPermissionStatus();
+      }
+    }
+
+    function capturePhoto() {
+      if (!cameraStream || !video.videoWidth || !video.videoHeight) {
+        statusBox.classList.add("error");
+        statusBox.textContent = "The camera is not ready yet. Wait for the live preview, then try again.";
+        return;
+      }
+      captureCanvas.width = video.videoWidth;
+      captureCanvas.height = video.videoHeight;
+      const context = captureCanvas.getContext("2d");
+      context.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+      const imageData = captureCanvas.toDataURL("image/jpeg", 0.92);
+      stopCamera();
+      resultBox.innerHTML = "";
+      showImage(imageData, "Camera photo captured and ready for classification");
+    }
+
+    async function switchCamera() {
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      await startCamera();
+    }
+
+    function renderPredictions(predictions) {
+      predictions.sort((a, b) => b.probability - a.probability);
+      const best = predictions[0];
+      if (!best) throw new Error("The model returned no class predictions.");
+      const percentage = Math.round(best.probability * 100);
+      const low = best.probability < REVIEW_THRESHOLD;
+
+      const verdict = document.createElement("div");
+      verdict.className = "verdict" + (low ? " low" : "");
+      const title = document.createElement("span");
+      title.className = "verdict-title";
+      title.textContent = low ? "Please review this image" : best.className;
+      const description = document.createElement("span");
+      description.textContent = low
+        ? `Top model score: ${percentage}%. The photo may be unclear or outside the four trained categories. Try a clearer photo showing one item.`
+        : `Likely category · model score ${percentage}%. This is a model estimate, not a guaranteed waste-disposal instruction.`;
+      verdict.append(title, description);
+      resultBox.appendChild(verdict);
+
+      const scoreTitle = document.createElement("div");
+      scoreTitle.className = "score-title";
+      scoreTitle.textContent = "Prediction scores by category";
+      resultBox.appendChild(scoreTitle);
+
+      predictions.forEach((item) => {
+        const row = document.createElement("div");
+        row.className = "score-row";
+        const name = document.createElement("span");
+        name.textContent = item.className;
+        const track = document.createElement("div");
+        track.className = "track";
+        const fill = document.createElement("div");
+        fill.className = "fill";
+        fill.style.width = `${Math.max(0, Math.min(100, item.probability * 100))}%`;
+        track.appendChild(fill);
+        const score = document.createElement("strong");
+        score.textContent = `${Math.round(item.probability * 100)}%`;
+        row.append(name, track, score);
+        resultBox.appendChild(row);
+      });
+    }
+
+    classifyButton.addEventListener("click", async () => {
+      if (!model || !preview.src) return;
+      classifyButton.disabled = true;
+      statusBox.classList.remove("error");
+      statusBox.textContent = "Analysing image…";
+      resultBox.innerHTML = "";
+      try {
+        const predictions = await model.predict(preview);
+        renderPredictions(predictions);
+        statusBox.textContent = "Classification complete.";
+      } catch (error) {
+        console.error("Classification error:", error);
+        statusBox.classList.add("error");
+        statusBox.textContent = "Classification failed: " + (error.message || String(error));
+      } finally {
+        updateActionButtons();
+      }
+    });
+
+    $("uploadTab").addEventListener("click", () => {
+      $("uploadTab").classList.add("active");
+      $("cameraTab").classList.remove("active");
+      $("uploadTab").setAttribute("aria-selected", "true");
+      $("cameraTab").setAttribute("aria-selected", "false");
+      $("uploadPanel").hidden = false;
+      $("cameraPanel").hidden = true;
+      stopCamera();
+    });
+    $("cameraTab").addEventListener("click", () => {
+      $("cameraTab").classList.add("active");
+      $("uploadTab").classList.remove("active");
+      $("cameraTab").setAttribute("aria-selected", "true");
+      $("uploadTab").setAttribute("aria-selected", "false");
+      $("cameraPanel").hidden = false;
+      $("uploadPanel").hidden = true;
+      refreshCameraPermissionStatus();
+    });
+    $("startCameraButton").addEventListener("click", startCamera);
+    $("captureButton").addEventListener("click", capturePhoto);
+    $("switchCameraButton").addEventListener("click", switchCamera);
+    $("stopCameraButton").addEventListener("click", stopCamera);
+    clearButton.addEventListener("click", clearImage);
+    $("retryButton").addEventListener("click", loadModel);
+
+    window.addEventListener("beforeunload", () => {
+      stopCamera();
+      if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
+    });
+
+    loadModel();
+  </script>
+</body>
+</html>
